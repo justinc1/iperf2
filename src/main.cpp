@@ -85,6 +85,8 @@ void cleanup( void );
 // main_thread_exited flag.
 bool volatile main_thread_exited = false;
 bool volatile reporter_thread_exited = false;
+bool volatile listener_thread_exited = true;
+void listener_force_terminate();
 
 /* -------------------------------------------------------------------
  * global variables
@@ -267,6 +269,7 @@ int main( int argc, char **argv ) {
         Condition_Signal( &ReportCond );
         usleep(1000);
     }
+    listener_force_terminate();
     cleanup(); // on OSv, atexit does nothing
 
     return 0;

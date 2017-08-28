@@ -142,7 +142,9 @@ Listener::~Listener() {
  * For UDP, handle all data in this thread for Win32 Only, otherwise
  *          spawn a new Server thread.
  * ------------------------------------------------------------------- */
+extern volatile bool main_thread_exited, reporter_thread_exited, listener_thread_exited;
 void Listener::Run( void ) {
+    listener_thread_exited = false;
 #if 0 // ifdef WIN32 removed to allow Windows to use multi-threaded UDP server
     if ( isUDP( mSettings ) && !isSingleUDP( mSettings ) ) {
         UDPSingleServer();
@@ -185,6 +187,9 @@ void Listener::Run( void ) {
             // Get a new socket
             Accept( server );
             if ( server->mSock == INVALID_SOCKET ) {
+                break;
+            }
+            if ( main_thread_exited ) {
                 break;
             }
             if ( sInterupted != 0 ) {
@@ -309,6 +314,7 @@ sInterupted == SIGALRM
 
         Settings_Destroy( server );
     }
+    listener_thread_exited = true;
 } // end Run
 
 /* -------------------------------------------------------------------
@@ -319,6 +325,10 @@ sInterupted == SIGALRM
  * wildcard server address, specifying what incoming interface to
  * accept connections on.
  * ------------------------------------------------------------------- */
+static int mSettings_listen_type = 0;
+static int mSettings_listen_domain = 0;
+static short mSettings_listen_addr = 0;
+static short mSettings_listen_port = 0;
 void Listener::Listen( ) {
     int rc;
 
@@ -333,6 +343,8 @@ void Listener::Listen( ) {
                   AF_INET
 #endif
                   : AF_INET);
+    mSettings_listen_type = type;
+    mSettings_listen_domain = domain;
 
 #ifdef WIN32
     if ( SockAddr_isMulticast( &mSettings->local ) ) {
@@ -366,6 +378,9 @@ void Listener::Listen( ) {
         rc = bind( mSettings->mSock, (sockaddr*) &mSettings->local, mSettings->size_local );
         FAIL_errno( rc == SOCKET_ERROR, "bind", mSettings );
     }
+    mSettings_listen_addr = ((sockaddr_in*)&(mSettings->local))->sin_addr.s_addr;
+    mSettings_listen_port = ((sockaddr_in*)&(mSettings->local))->sin_port;
+
     // listen for connections (TCP only).
     // default backlog traditionally 5
     if ( !isUDP( mSettings ) ) {
@@ -443,6 +458,25 @@ void Listener::McastSetTTL( int val ) {
  * After Listen() has setup mSock, this will block
  * until a new connection arrives or until the -t value occurs
  * ------------------------------------------------------------------- */
+int mSettings_mSock = INVALID_SOCKET;
+void listener_force_terminate() {
+    //fprintf(stderr, "DBG shutdown mSettings_mSock=%d\n", mSettings_mSock);
+    //shutdown(mSettings_mSock, SHUT_RDWR); // doesn't wake up thread in accept().
+
+    struct sockaddr_in server;
+    int sock;
+    sock = socket(mSettings_listen_domain, mSettings_listen_type, 0);
+    if (sock <= -1)
+        return;
+    server.sin_addr.s_addr = mSettings_listen_addr;
+    server.sin_family = mSettings_listen_domain;
+    server.sin_port = mSettings_listen_port;
+    connect(sock, (struct sockaddr *)&server , sizeof(server));
+    // now wait on listener_thread_exited to get set to true;
+    while (listener_thread_exited == false) {
+        usleep(1000);
+    }
+}
 
 void Listener::Accept( thread_Settings *server ) {
 
@@ -459,6 +493,7 @@ void Listener::Accept( thread_Settings *server ) {
 	    WARN(1, "Failed setting socket to non-blocking mode");
 	}
     }
+    mSettings_mSock = mSettings->mSock;
 
     while ( server->mSock == INVALID_SOCKET) {
 	if (mMode_Time) {
