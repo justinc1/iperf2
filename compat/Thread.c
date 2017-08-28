@@ -227,6 +227,7 @@ DWORD WINAPI
 void*
 #endif
 thread_run_wrapper( void* paramPtr ) {
+    //fprintf(stderr, "DBG %s:%d %s paramPtr=%p\n", __FILE__,__LINE__,__FUNCTION__, paramPtr);
     struct thread_Settings* thread = (struct thread_Settings*) paramPtr;
 
     // which type of object are we

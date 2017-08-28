@@ -81,6 +81,11 @@
 // Function called at exit to clean up as much as possible
 void cleanup( void );
 
+// For OSv only. As atexit() does nothing, left-over app thread should check
+// main_thread_exited flag.
+bool volatile main_thread_exited = false;
+bool volatile reporter_thread_exited = false;
+
 /* -------------------------------------------------------------------
  * global variables
  * ------------------------------------------------------------------- */
@@ -255,6 +260,15 @@ int main( int argc, char **argv ) {
     thread_joinall();
 
     // all done!
+
+    //fprintf( stderr, "DBG main exit\n");
+    main_thread_exited = true;
+    while (reporter_thread_exited == false) {
+        Condition_Signal( &ReportCond );
+        usleep(1000);
+    }
+    cleanup(); // on OSv, atexit does nothing
+
     return 0;
 } // end main
 

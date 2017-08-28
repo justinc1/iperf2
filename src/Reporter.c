@@ -607,16 +607,27 @@ void ReportServerUDP( thread_Settings *agent, server_hdr *server ) {
  * This function is called only when the reporter thread
  * This function is the loop that the reporter thread processes
  */
+extern volatile bool main_thread_exited, reporter_thread_exited;
 void reporter_spawn( thread_Settings *thread ) {
     do {
         // This section allows for safe exiting with Ctrl-C
         Condition_Lock ( ReportCond );
+        //fprintf(stderr, "DBG tid=% 5d %s:%d %s ReportRoot=%p\n", gettid(), __FILE__,__LINE__,__FUNCTION__, ReportRoot);
         if ( ReportRoot == NULL ) {
             // Allow main thread to exit if Ctrl-C is received
             thread_setignore();
             Condition_Wait ( &ReportCond );
             // Stop main thread from exiting until done with all reports
             thread_unsetignore();
+
+            // OSv, client test is done, return from thread, so that all app threads do finish.
+            //fprintf(stderr, "DBG tid=% 5d %s:%d %s ReportRoot=%p {main reporter}_thread_exited=%d %d\n",
+            //    gettid(), __FILE__,__LINE__,__FUNCTION__, ReportRoot, main_thread_exited, reporter_thread_exited);
+            if (main_thread_exited) {
+                Condition_Unlock ( ReportCond );
+                reporter_thread_exited = 1;
+                return;
+            }
         }
         Condition_Unlock ( ReportCond );
 
