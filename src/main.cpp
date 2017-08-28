@@ -263,13 +263,19 @@ int main( int argc, char **argv ) {
 
     // all done!
 
-    //fprintf( stderr, "DBG main exit\n");
+    fprintf( stderr, "DBG main exit\n");
+    //fprintf( stderr, "DBG aa nonterminating_num=%d thread_sNum=%d\n", nonterminating_num, thread_sNum);
     main_thread_exited = true;
+    //while (nonterminating_num > 0) {
+    //    fprintf( stderr, "DBG nonterminating_num=%d\n", nonterminating_num);
+    //    usleep(1);
+    //}
     while (reporter_thread_exited == false) {
         Condition_Signal( &ReportCond );
         usleep(1000);
     }
     listener_force_terminate();
+    //sleep(1);
     cleanup(); // on OSv, atexit does nothing
 
     return 0;

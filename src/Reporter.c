@@ -612,7 +612,7 @@ void reporter_spawn( thread_Settings *thread ) {
     do {
         // This section allows for safe exiting with Ctrl-C
         Condition_Lock ( ReportCond );
-        //fprintf(stderr, "DBG tid=% 5d %s:%d %s ReportRoot=%p\n", gettid(), __FILE__,__LINE__,__FUNCTION__, ReportRoot);
+        fprintf(stderr, "DBG tid=% 5d %s:%d %s ReportRoot=%p\n", gettid(), __FILE__,__LINE__,__FUNCTION__, ReportRoot);
         if ( ReportRoot == NULL ) {
             // Allow main thread to exit if Ctrl-C is received
             thread_setignore();

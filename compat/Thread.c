@@ -227,7 +227,7 @@ DWORD WINAPI
 void*
 #endif
 thread_run_wrapper( void* paramPtr ) {
-    //fprintf(stderr, "DBG %s:%d %s paramPtr=%p\n", __FILE__,__LINE__,__FUNCTION__, paramPtr);
+    fprintf(stderr, "DBG %s:%d %s paramPtr=%p\n", __FILE__,__LINE__,__FUNCTION__, paramPtr);
     struct thread_Settings* thread = (struct thread_Settings*) paramPtr;
 
     // which type of object are we
@@ -361,7 +361,7 @@ void thread_register_nonterm( void ) {
  * Ctrl-C they can be ignored by the joinall.
  * ------------------------------------------------------------------- */
 void thread_unregister_nonterm( void ) {
-    Condition_Lock( thread_sNum_cond );
+    Condition_Lock( thread_sNum_cond ); // tu najbrz listen thread visi/crkne
     if ( nonterminating_num == 0 ) {
         // nonterminating has been released with release_nonterm
         // Add back to the threads to wait on

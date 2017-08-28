@@ -186,6 +186,7 @@ void Listener::Run( void ) {
         do {
             // Get a new socket
             Accept( server );
+            printf("DBG Listener::Run, accept done, server->mSock=%d\n", server->mSock);
             if ( server->mSock == INVALID_SOCKET ) {
                 break;
             }
@@ -314,7 +315,10 @@ sInterupted == SIGALRM
 
         Settings_Destroy( server );
     }
+    //usleep(5000*100); // obcasno crash?
     listener_thread_exited = true;
+    //usleep(5000*100); // naredi nekam veliko signal_handler threadov. In app se ne konca :/ se slabse ko clean crash.
+
 } // end Run
 
 /* -------------------------------------------------------------------
@@ -471,7 +475,9 @@ void listener_force_terminate() {
     server.sin_addr.s_addr = mSettings_listen_addr;
     server.sin_family = mSettings_listen_domain;
     server.sin_port = mSettings_listen_port;
+    fprintf(stderr, "DBG connecting to addr 0x%08x, port %d, listener_thread_exited=%d\n", ntohl(mSettings_listen_addr), ntohs(mSettings_listen_port), listener_thread_exited);
     connect(sock, (struct sockaddr *)&server , sizeof(server));
+    fprintf(stderr, "DBG connected  to addr 0x%08x, port %d, listener_thread_exited=%d\n", ntohl(mSettings_listen_addr), ntohs(mSettings_listen_port), listener_thread_exited);
     // now wait on listener_thread_exited to get set to true;
     while (listener_thread_exited == false) {
         usleep(1000);
